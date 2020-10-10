@@ -43,7 +43,7 @@ def collect_smartctl_or_vendor_tool(collect_id):
         phy_disks_list.remove('')
         for disk in phy_disks_list:
             with open('%s/%s/smartctl_%s.out' % (collect_id, node, disk), 'w') as out_file:
-                out_file.write(run_ssh_command(node, r"sudo smartctl -a %s" % disk))
+                out_file.write(run_ssh_command(node, r"sudo smartctl -a /dev/%s" % disk))
 
   
 
@@ -52,4 +52,4 @@ if __name__ == '__main__':
 #    print(salt_get_ceph_osds())
 #    print(salt_get_ceph_mons())
 #    collect_lsblk("test_"+NOW)
-    collect_smartctl_or_vendor_tool("test_"+NOW)
+#    collect_smartctl_or_vendor_tool("test_"+NOW)
