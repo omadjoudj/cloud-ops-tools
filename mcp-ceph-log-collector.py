@@ -126,7 +126,17 @@ def create_collect_archive():
     NOW = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     osd_nodes = salt_get_ceph_osds()
     mon_nodes = salt_get_ceph_mons()
-    collect_id = 'test_%s' % NOW
+    customer = ""
+    cluster = mon_nodes[0]
+    # Override if defined
+    try:
+        customer = sys.argv[1]
+        cluster = sys.argv[2]
+    except IndexError:
+        print("W: Using automatecly generated names, correct usage is:")
+        print("W: %s [CUSTOMER] [CLUSTER NAME]" % sys.argv[0])
+
+    collect_id = '%s_%s_%s' % (customer, cluster, NOW)
     os.mkdir('%s' % (collect_id,))
     collect_lsblk(collect_id, osd_nodes)
     collect_ceph_disk_list(collect_id, osd_nodes)
