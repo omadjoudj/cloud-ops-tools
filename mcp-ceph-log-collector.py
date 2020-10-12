@@ -91,6 +91,37 @@ def collect_atop(collect_id, nodes):
         for atop_file in recent_atop_files:
             run_scp(node, atop_file , '%s/%s' % (collect_id, node))
 
+def collect_cluster_data(collect_id, mon_node):
+    print("I: Collecting Ceph clutser data from %s" % mon_node)
+    print("I: Collecting CRUSH map")
+    run_ssh_command(mon_node, r"mkdir /tmp/%s" % collect_id)
+    run_ssh_command(mon_node, r"sudo ceph osd getcrushmap -o /tmp/%s/crush.bin" % collect_id)
+    run_ssh_command(mon_node, r"sudo crushtool -d /tmp/%s/crush.bin -o /tmp/%s/crushmap.txt" % (collect_id, collect_id))
+    print("I: Collecting cluster status")
+    run_ssh_command(mon_node, r"sudo ceph -s -f json -o /tmp/%s/ceph_s.json" % collect_id )
+    print("I: Collecting monmap")
+    run_ssh_command(mon_node, r"sudo ceph mon dump -f json -o /tmp/%s/monmap.json" % collect_id )
+    print("I: Collecting ceph df")
+    run_ssh_command(mon_node, r"sudo ceph df -f json -o /tmp/%s/ceph_df.json" % collect_id )
+    print("I: Collecting ceph osd df")
+    run_ssh_command(mon_node, r"sudo ceph osd df -f json -o /tmp/%s/ceph_osd_df.json" % collect_id )
+    print("I: Collecting ceph osd dump")
+    run_ssh_command(mon_node, r"sudo ceph osd dump -f json -o /tmp/%s/ceph_osd_dump.json" % collect_id)
+    print("I: Collecting rados df")
+    run_ssh_command(mon_node, r"sudo rados df -f json > /tmp/%s/rados_df.json" % collect_id )
+    print("I: Collecting ceph report")
+    run_ssh_command(mon_node, r"sudo ceph report -o /tmp/%s/ceph_report.json" % collect_id )
+    print("I: Collecting auth data anonymized")
+    run_ssh_command(mon_node, r"sudo ceph auth list -f json |sed 's/AQ[^=]*==/KEY/g' > /tmp/%s/ceph_auth_ls.json" % collect_id)
+    print("I: Collecting ceph pg dump")
+    run_ssh_command(mon_node, r"sudo ceph pg dump -f json -o /tmp/%s/ceph_pg_dump.json" % collect_id )
+    print("I: Collecting ceph osd perf")
+    run_ssh_command(mon_node, r"sudo ceph osd perf -o /tmp/%s/ceph_osd_perf.out" % collect_id )
+    run_ssh_command(mon_node, r"sudo chmod o+r /tmp/%s/*" % collect_id)
+    if not os.path.exists('%s/cluster_data' % (collect_id,)):
+        os.mkdir('%s/cluster_data' % (collect_id,))
+    run_scp(mon_node, '/tmp/%s/*' % collect_id  , '%s/cluster_data/' % (collect_id,))
+
 def create_collect_archive():
     NOW = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     osd_nodes = salt_get_ceph_osds()
@@ -100,9 +131,21 @@ def create_collect_archive():
     collect_lsblk(collect_id, osd_nodes)
     collect_ceph_disk_list(collect_id, osd_nodes)
     collect_ceph_conf(collect_id, osd_nodes + mon_nodes)
-    #collect_smartctl_or_vendor_tool(collect_id, osd_nodes)
     collect_ceph_osd_running_conf(collect_id, osd_nodes)
-    collect_atop(collect_id, osd_nodes)
+    try:
+        collect_atop(collect_id, osd_nodes)
+    except Exception as e:
+        print("E: Error while collecting atop, make sure atop is installed")
+        print(e)
+
+    try:
+        collect_smartctl_or_vendor_tool(collect_id, osd_nodes)
+    except Exception as e:
+        print("E: Error while collecting SMART/HPSSA, make sure smartctl or hpssacli is installed")
+        print(e)
+    # Only one mon node is needed for this
+    collect_cluster_data(collect_id, mon_nodes[0])
+    os.system("tar Jcf %s.tar.bz2 ./%s/" % (collect_id, collect_id,))
 
 if __name__ == '__main__':
     create_collect_archive()
