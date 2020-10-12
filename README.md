@@ -1,2 +1,2 @@
 # mcp-tools
-Tools and script for MCP (Salt)
+Tools and scripts for MCP (Salt)
