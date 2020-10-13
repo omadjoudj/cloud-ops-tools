@@ -3,7 +3,7 @@
 # For bugs/issues contact: Othman Madjoudj <omadjoudj@mirantis.com>
 
 #NOTE: By default Salt on MCP does not allow copying files from minions to master
-#NOTE: Using Salt API directly was avoided due to version differances
+#NOTE: Using Salt API directly was avoided due to version differences
 
 import datetime
 import json
@@ -133,7 +133,7 @@ def create_collect_archive():
         customer = sys.argv[1]
         cluster = sys.argv[2]
     except IndexError:
-        print("W: Using automatecly generated names, correct usage is:")
+        print("W: Using automatically generated names, correct usage is:")
         print("W: %s [CUSTOMER] [CLUSTER NAME]" % sys.argv[0])
 
     collect_id = '%s_%s_%s' % (customer, cluster, NOW)
