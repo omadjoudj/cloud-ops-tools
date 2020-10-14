@@ -151,7 +151,7 @@ def create_collect_archive():
     try:
         collect_smartctl_or_vendor_tool(collect_id, osd_nodes)
     except Exception as e:
-        print("E: Error while collecting SMART/HPSSA, make sure smartctl or hpssacli is installed")
+        print("E: Error while collecting SMART/HPSSA, make sure smartctl or hpssacli is installed, and if the devices support those tools")
         print(e)
     # Only one mon node is needed for this
     collect_cluster_data(collect_id, mon_nodes[0])
