@@ -22,10 +22,10 @@ def salt_get_ceph_osds():
     return json.loads(subprocess.check_output(["sudo", "salt", "-C", 'I@ceph:osd', '--out', 'json', '--static', 'test.ping'])).keys()
 
 def run_ssh_command(node, cmd):
-    return subprocess.check_output(["ssh", "-o", "StrictHostKeyChecking=no", node, cmd])
+    return subprocess.check_output(["ssh", "-q", "-o", "StrictHostKeyChecking=no", node, cmd])
 
 def run_scp(node, remote_path, local_path):
-    return subprocess.check_output(["scp", "-o", "StrictHostKeyChecking=no", "-r", "%s:%s" % (node, remote_path), local_path])
+    return subprocess.check_output(["scp", "-q", "-o", "StrictHostKeyChecking=no", "-r", "%s:%s" % (node, remote_path), local_path])
 
 #TODO: Add possibility to remove node via env vairables EXCLUDE_NODES=node1:node2:...
 
