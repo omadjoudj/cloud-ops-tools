@@ -19,7 +19,10 @@ def salt_get_ceph_mons():
     return json.loads(subprocess.check_output(["sudo", "salt", "-C", 'I@ceph:mon', '--out', 'json', '--static', 'test.ping'])).keys()
 
 def salt_get_ceph_osds():
-    return json.loads(subprocess.check_output(["sudo", "salt", "-C", 'I@ceph:osd', '--out', 'json', '--static', 'test.ping'])).keys()
+    try:
+        return json.loads(subprocess.check_output(["sudo", "salt", "-C", 'I@ceph:osd', '--out', 'json', '--static', 'test.ping'])).keys()
+    except Exception as e:
+        return "SSH_COMMAND_FAILED: %s" % str(e)
 
 def run_ssh_command(node, cmd):
     return subprocess.check_output(["ssh", "-q", "-o", "StrictHostKeyChecking=no", node, cmd])
