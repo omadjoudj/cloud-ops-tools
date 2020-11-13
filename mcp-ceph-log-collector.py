@@ -158,7 +158,7 @@ def create_collect_archive():
         print(e)
     # Only one mon node is needed for this
     collect_cluster_data(collect_id, mon_nodes[0])
-    os.system("tar Jcf %s.tar.bz2 ./%s/" % (collect_id, collect_id,))
+    os.system("tar Jcf %s.tar.xz ./%s/" % (collect_id, collect_id,))
 
 if __name__ == '__main__':
     create_collect_archive()
