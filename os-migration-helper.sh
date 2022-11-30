@@ -42,6 +42,7 @@ while true; do
         sleep 10
         if [[ $vm_migrating -eq 0 ]] ; then
                 echo "[INFO] Launching Live-Evacuation of 20 VMs from $host"
+                # Switch to openstack client b/c nova client is deprecated
                 nova host-evacuate-live --max-servers 20 $host
         fi
 done
