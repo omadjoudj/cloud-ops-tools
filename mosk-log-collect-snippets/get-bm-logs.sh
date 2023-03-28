@@ -10,13 +10,13 @@ kubectl logs -n kaas --all-containers --timestamps deployment/kaas-ipam > kaas-i
 
 ## Objects:
 
-kubectl get -n $NAMESPACE -o yaml machine > machine.all.yaml
-kubectl get -n $NAMESPACE -o yaml BareMetalHostCredential > BareMetalHostCredential.all.yaml
-kubectl get -n $NAMESPACE -o yaml BareMetalHost > BareMetalHost.all.yaml
-kubectl get -n $NAMESPACE -o yaml BareMetalHostProfile > BareMetalHostProfile.all.yaml
-kubectl get -n $NAMESPACE -o yaml L2Template > L2Template.all.yaml
-kubectl get -n $NAMESPACE -o yaml LCMMachine > LCMMachine.all.yaml
-kubectl get -n $NAMESPACE -o yaml IPAMHost > IPAMHost.all.yaml
+kubectl get -n $NAMESPACE -o json machine > machine.all.json
+kubectl get -n $NAMESPACE -o json BareMetalHostCredential > BareMetalHostCredential.all.json
+kubectl get -n $NAMESPACE -o json BareMetalHost > BareMetalHost.all.json
+kubectl get -n $NAMESPACE -o json BareMetalHostProfile > BareMetalHostProfile.all.json
+kubectl get -n $NAMESPACE -o json L2Template > L2Template.all.json
+kubectl get -n $NAMESPACE -o json LCMMachine > LCMMachine.all.json
+kubectl get -n $NAMESPACE -o json IPAMHost > IPAMHost.all.json
 
 
 kubectl get -n $NAMESPACE -o wide machine > machine.all.wide.txt
