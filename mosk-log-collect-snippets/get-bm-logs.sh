@@ -1,4 +1,5 @@
 #!/bin/bash
+# Dont use bash/sh specific stuff since it might be needed on Windows
 
 NAMESPACE=$1
 
@@ -7,6 +8,9 @@ NAMESPACE=$1
 kubectl logs -n kaas --all-containers --timestamps deployment/baremetal-provider > baremetal-provider.log
 kubectl logs -n kaas --all-containers --timestamps deployment/baremetal-operator > baremetal-operator.log
 kubectl logs -n kaas --all-containers --timestamps deployment/kaas-ipam > kaas-ipam.log
+kubectl logs -n kaas --all-containers --timestamps deployment/ironic> ironic.log
+kubectl logs -n kaas --all-containers --timestamps deployment/dnsmasq> dnsmasq.log
+
 
 ## Objects:
 
