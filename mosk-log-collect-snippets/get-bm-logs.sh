@@ -10,6 +10,7 @@ kubectl logs -n kaas --all-containers --timestamps deployment/baremetal-operator
 kubectl logs -n kaas --all-containers --timestamps deployment/kaas-ipam > kaas-ipam.log
 kubectl logs -n kaas --all-containers --timestamps deployment/ironic> ironic.log
 kubectl logs -n kaas --all-containers --timestamps deployment/dnsmasq> dnsmasq.log
+kubectl logs -n kaas --all-containers --timestamps deployment/lcm-lcm-controller> lcm-lcm-controller.log
 
 
 ## Objects:
