@@ -12,7 +12,9 @@ worker_nodes = subprocess.check_output("KUBECONFIG=%s  kubectl get -n %s machine
 
 
 ctl_nodes.remove("")
+ctl_nodes.sort()
 worker_nodes.remove("")
+worker_nodes.sort()
 
 
 # Create new list when 1 ctl is picked then 20 worker are picked to avoid 
