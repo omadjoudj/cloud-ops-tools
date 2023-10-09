@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# Contact: omadjoudj
 
 import subprocess
 import sys
@@ -24,12 +25,12 @@ reindex_nodes = []
 
 for i in range(len(cluster_name)+len(worker_nodes)):
     if i % 20 == 0:
-        if len(ctl_nodes) != 0 :
+        if len(ctl_nodes) != 0:
             reindex_nodes.append(ctl_nodes.pop())
     else:
         if len(worker_nodes) != 0:
             reindex_nodes.append(worker_nodes.pop())
 
 for i in range(len(reindex_nodes)):
-    print("kubectl patch  machine %s -n %s  --type=\'json\' -p=\'[{\"op\": \"replace\",\"path\": \"/spec/providerSpec/value/upgradeIndex\",\"value\": %s}]\'" % (reindex_nodes[i], cluster_name, str(i)))
+    print("kubectl patch  machine %s -n %s  --type=\'json\' -p=\'[{\"op\": \"replace\",\"path\": \"/spec/providerSpec/value/upgradeIndex\",\"value\": %s}]\'" % (reindex_nodes[i], cluster_name, str(i+1)))
 
