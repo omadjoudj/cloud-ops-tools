@@ -3,8 +3,8 @@ alias k='kubectl'
 . ~/.kubectl_bash_compl
 complete -o default -F __start_kubectl k
 
-alias mcc="export KUBECONFIG=$PWD/mcc.kubeconfig"
-alias mosk="export KUBECONFIG=$PWD/mosk.kubeconfig"
+alias mcc="export KUBECONFIG=./mcc.kubeconfig;"
+alias mosk="export KUBECONFIG=./mosk.kubeconfig;"
 alias rk="kubectl exec -n rook-ceph deploy/rook-ceph-tools -it --"
 alias os="kubectl exec -it -n openstack deploy/keystone-client -it --"
 alias silences="kubectl -n stacklight exec sts/prometheus-alertmanager -c prometheus-alertmanager -- amtool --alertmanager.url http://127.0.0.1:9093 silence"
