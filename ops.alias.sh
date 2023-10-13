@@ -10,3 +10,5 @@ alias ks="kubectl exec -it -n openstack deploy/keystone-client -it --"
 alias silence-list="kubectl -n stacklight exec sts/prometheus-alertmanager -c prometheus-alertmanager -- amtool --alertmanager.url http://127.0.0.1:9093 silence"
 alias silence-add="kubectl -n stacklight exec sts/prometheus-alertmanager -c prometheus-alertmanager -- amtool --alertmanager.url http://127.0.0.1:9093 silence add -a '<YOUR_NAME>' -d '2h'"
 alias silence-all='silence-add -c "Comment" alertname=~".+"'
+
+export KUBE_EDITOR='code --wait'
