@@ -11,7 +11,7 @@ alias silence-all='silence-add -d 2h -c "Temporary silence for 2H"  "alertname!~
 alias silence-upgrade='silence-add -d 7d -c "MOSK Upgrade"  "alertname!~Watchdog|TestVMCreateError|TestVMPingError|TestVMCountTooHigh|TestVMCreateTooLong|OpenstackServiceInternalApiOutage|OpenstackServicePublicApiOutage|OpenstackPublicAPI5xxCritical|OpenstackAPI5xxCritical|OpenstackAPI401Critical"'
 export KUBE_EDITOR='code --wait'
 
-alias benv '. ~/kenv `cat ~/workspace/mos_access/b.com_envs  | fzf`'
+alias benv='. ~/kenv `cat ~/workspace/mos_access/b.com_envs  | fzf`'
 
 function k_get_pods_per_node 
 { 
