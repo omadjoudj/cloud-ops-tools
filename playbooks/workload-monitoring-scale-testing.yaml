@@ -1,3 +1,7 @@
+##
+# pip install openstacksdk
+# ansible-galaxy collection install openstack.cloud
+##
 ---
 - name: Create workload monitoring artifects
   hosts: localhost
@@ -11,7 +15,7 @@
         shared: true
         validate_certs: false
 
-    - name: Create a test subnet 
+    - name: Create a test subnet
       openstack.cloud.subnet:
         validate_certs: false
         state: present
