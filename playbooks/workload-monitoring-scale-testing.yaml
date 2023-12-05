@@ -1,0 +1,32 @@
+---
+- name: Create workload monitoring artifects
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Create a test network
+      openstack.cloud.network:
+        state: present
+        name: omadjoudj-test-network
+        external: false
+        shared: true
+        validate_certs: false
+
+    - name: Create a test subnet 
+      openstack.cloud.subnet:
+        validate_certs: false
+        state: present
+        network_name: omadjoudj-test-network
+        name: omadjoudj-test-subnet
+        cidr: 10.0.0.0/8
+        gateway_ip: 10.0.0.1
+        is_dhcp_enabled: true
+
+    - name: Create workload monitoring test VMs
+      openstack.cloud.server:
+        state: present
+        validate_certs: false
+        name: "mirantis-opscare-omadjoudj-test-{{ item }}"
+        image: "Cirros-6.0"
+        flavor: "m1.extra_tiny_test"
+        network: "omadjoudj-test-network"
+      loop: "{{ range(1, 10) | list }}"
