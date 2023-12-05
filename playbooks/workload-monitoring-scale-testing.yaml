@@ -33,4 +33,9 @@
         image: "Cirros-6.0"
         flavor: "m1.extra_tiny_test"
         network: "omadjoudj-test-network"
+        metadata: "openstack.lcm.mirantis.com:prober"
+        floating_ip_pools: public-dqs
+        auto_ip: true
+        security_groups:
+          - default
       loop: "{{ range(1, 10) | list }}"
