@@ -1,5 +1,5 @@
 #!/bin/bash
-MOS_ACCESS=mos_access
+MOS_ACCESS=~/workspace/mos_access/B.com/
 
 if [ $# -lt 2 ]; then
     echo "No enough args"
@@ -8,7 +8,12 @@ else
 	if [[ $2 == "mosk" || $2 == "mcc" ]]; then
 		export KUBECONFIG=$MOS_ACCESS/$1/$2.kubeconfig
 		#export PS1="\[\e[41m\]$1\[\e[m\] $PS1"
-        export PS1="\w \[\e[41m\]($1 $2)\[\e[m\] \$ "
+        #export PS1="\w \[\e[41m\]($1 $2)\[\e[m\] \$ "
+        #export PS1="\w ($1 $2) \$ "
+        #export PS1="\w \[\e[41m\]($1 $2)\[\e[m\] \$ "
+        PS1="%{$fg[white]%}%n%{$reset_color%}@%{$fg[white]%}%m %{$fg[yellow]%} %{$bg[red]%}%~ [⚠️  PRODUCTION ⚠️ ] %{$reset_color%}%% "
+
+
 
 	else
 		echo "2nd arg must be mosk or mcc"
