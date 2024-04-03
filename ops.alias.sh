@@ -14,9 +14,4 @@ export KUBE_EDITOR='code --wait'
 
 alias benv='. ~/kenv `cat ~/workspace/mos_access/b.com_envs  | fzf`'
 
-function k_get_pods_per_node 
-{ 
-    kubectl get pods -A -o wide  --field-selector spec.nodeName=$1 
-}
-
 

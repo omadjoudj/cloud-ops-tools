@@ -1,0 +1,4 @@
+#!/bin/bash
+kubectl get pods -A -o wide  --field-selector spec.nodeName=$1 
+
+
