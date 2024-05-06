@@ -1,7 +1,7 @@
 #!/bin/bash
 # Contact: ~omadjoudj
 
-DATE=`date -I`
+DATE=`date +%s`
 PREFIX="omadjoudj-opscare-upgrade-workload-mon"
 IMG="healthcheck-vm"
 #SSHKEY="omadjoudj-opscare-pubkey"
