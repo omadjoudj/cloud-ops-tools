@@ -9,27 +9,42 @@ cluster_name = str(sys.argv[2])
 
 
 ctl_nodes = subprocess.check_output("KUBECONFIG=%s  kubectl get -n %s machine -o custom-columns=NAME:.metadata.name | grep -vE 'NAME|osd|cmp'" % (kubeconfig, cluster_name), shell=True).decode().split("\n")
-worker_nodes = subprocess.check_output("KUBECONFIG=%s  kubectl get -n %s machine -o custom-columns=NAME:.metadata.name | grep -E 'osd|cmp'" % (kubeconfig, cluster_name), shell=True).decode().split("\n")
+## cmp removed since they need to end indexed last as we will be switching to NodeWorkLoadLock-based approach
+osd_nodes = subprocess.check_output("KUBECONFIG=%s  kubectl get -n %s machine -o custom-columns=NAME:.metadata.name | grep -E osd" % (kubeconfig, cluster_name), shell=True).decode().split("\n")
+cmp_nodes = subprocess.check_output("KUBECONFIG=%s  kubectl get -n %s machine -o custom-columns=NAME:.metadata.name | grep -E cmp" % (kubeconfig, cluster_name), shell=True).decode().split("\n")
 
-
+## Clean up
 ctl_nodes.remove("")
-ctl_nodes.sort()
-worker_nodes.remove("")
-worker_nodes.sort()
+osd_nodes.remove("")
+cmp_nodes.remove("")
 
+ctl_nodes.sort(reverse=True)
+osd_nodes.sort(reverse=True)
+cmp_nodes.sort(reverse=True)
 
-# Create new list when 1 ctl is picked then 20 worker are picked to avoid 
+# Create new list when 1 ctl is picked then 5 worker are picked to avoid 
 # deadlock when parallel upgrade is enabled (FIELD-6451, FIELD-6386)
 
-reindex_nodes = []
 
-for i in range(len(cluster_name)+len(worker_nodes)):
-    if i % 20 == 0:
-        if len(ctl_nodes) != 0:
-            reindex_nodes.append(ctl_nodes.pop())
+reindex_nodes = []
+i=0
+while True:
+    if len(ctl_nodes)==0 and len(osd_nodes)==0:
+        break
+
+    # Reduced to 5 since we dont have enought osds
+    if i % 5 == 0 and  len(ctl_nodes) != 0:
+        reindex_nodes.append(ctl_nodes.pop())
     else:
-        if len(worker_nodes) != 0:
-            reindex_nodes.append(worker_nodes.pop())
+        reindex_nodes.append(osd_nodes.pop())
+    i+=1
+    
+while True:
+    if len(cmp_nodes)==0:
+        break
+    # Put back cmp nodes at the end of the list
+    reindex_nodes.append(cmp_nodes.pop())
+    
 
 for i in range(len(reindex_nodes)):
     print("kubectl patch  machine %s -n %s  --type=\'json\' -p=\'[{\"op\": \"replace\",\"path\": \"/spec/providerSpec/value/upgradeIndex\",\"value\": %s}]\'" % (reindex_nodes[i], cluster_name, str(i+1)))
