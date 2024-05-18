@@ -91,7 +91,14 @@ case "$1" in
                 echo "Starting to Release NodeWorkloadLock on the nodes of the rack $2"
                 for i in `grep "$2" $CMP_INVENTORY | awk '{print $1}'`; 
                 do
-                    remove_nodeworkloadlock $i 
+                    check_cmp_upgrade_readiness $i
+                    result=$?
+                    if [ $result -eq 0 ]; then
+                        remove_nodeworkloadlock $i
+                    else 
+                        echo "ERROR: Node $i failed the readiness checks. The node must be Empty or have its workload in SHUTOFF state"
+                        exit 2  
+                    fi 
                 done
             else
                 echo "ERROR: Rack $2 not found in the inventory"
