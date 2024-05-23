@@ -15,7 +15,7 @@ function check_cmp_upgrade_readiness()
     local cmp
     local non_running_vms
     cmp="$1"
-    non_running_vms="$( $KEYSTONE_POD_PREFIX openstack server list --all -n -f value --limit -1 --host "$cmp" |grep -v -w SHUTOFF )"
+    non_running_vms="$( $KEYSTONE_POD_PREFIX openstack server list --all -n -f value --limit 100000000000 --host "$cmp" |grep -v -w SHUTOFF )"
     if [[ -n "$non_running_vms" ]]; then
         echo "ERROR: $cmp still has running VMs."
         echo "$non_running_vms" | awk '{print $1}'
@@ -41,7 +41,7 @@ function refresh_cmp_inventory()
 
     #$KEYSTONE_POD_PREFIX openstack compute service list --service nova-compute -f value -c Host > $CMP_INVENTORY
     echo "INFO: Refreshing compute node inventory"
-    kubectl get nodes -l openstack-compute-node=enabled -o json | jq -j '.items[] | .metadata.name, " ", .metadata.labels."kaas.mirantis.com/machine-name", "\n"' | sort -k 2 | grep 'cmp' > "$CMP_INVENTORY"
+    kubectl get nodes -l openstack-compute-node=enabled -o json | jq -j '.items[] | .metadata.name, " ", .metadata.labels."kaas.mirantis.com/machine-name", "\n"' | sort -k 2 > "$CMP_INVENTORY"
 }
 
 function create_nodeworkloadlock()
@@ -63,8 +63,13 @@ function remove_nodeworkloadlock()
 {
     local cmp
     cmp="$1"
-    echo "Releasing NodeWorkloadLock on the node $cmp"
-    kubectl delete nodeworkloadlocks --grace-period=0 "$TOOL_NAME-$cmp"
+    if kubectl get nodeworkloadlocks "$TOOL_NAME-$cmp" > /dev/null; then
+        echo "Releasing NodeWorkloadLock on the node $cmp"
+        kubectl delete nodeworkloadlocks --grace-period=0 "$TOOL_NAME-$cmp"
+    else
+        echo "ERROR: NodeWorkloadLock on the node $cmp does not exist"
+        exit 2
+    fi
 }
 
 function lock_all_nodes()
