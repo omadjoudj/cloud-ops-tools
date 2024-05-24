@@ -6,7 +6,7 @@ import sys
 
 kubeconfig = str(sys.argv[1])
 cluster_name = str(sys.argv[2])
-
+BATCH_SIZE=5
 
 ctl_nodes = subprocess.check_output("KUBECONFIG=%s  kubectl get -n %s machine -o custom-columns=NAME:.metadata.name | grep -vE 'NAME|osd|cmp'" % (kubeconfig, cluster_name), shell=True).decode().split("\n")
 ## cmp removed since they need to end indexed last as we will be switching to NodeWorkLoadLock-based approach
@@ -33,7 +33,7 @@ while True:
         break
 
     # Reduced to 5 since we dont have enought osds
-    if i % 5 == 0 and  len(ctl_nodes) != 0:
+    if i % BATCH_SIZE == 0 and  len(ctl_nodes) != 0:
         reindex_nodes.append(ctl_nodes.pop())
     else:
         reindex_nodes.append(osd_nodes.pop())
