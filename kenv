@@ -14,7 +14,7 @@ else
         #PS1="%{$fg[white]%}%n%{$reset_color%}@%{$fg[white]%}%m %{$fg[yellow]%} %{$bg[red]%}%~ [⚠️  PRODUCTION ⚠️ ] %{$reset_color%}%% "
         #PS1="%{$fg[white]%}%n%{$reset_color%}@%{$fg[white]%}%m %{$fg[yellow]%} %{$bg[red]%}%~ [⚠️  PRODUCTION - $1 ⚠️ ] %{$reset_color%}%% "
         PS1="%{$fg[yellow]%} %{$bg[red]%} [⚠️  PRODUCTION - $1 - $2 ⚠️ ] %{$reset_color%} %{$fg[white]%}%n%{$reset_color%}@%{$fg[white]%}%m %~ %% "
-
+        cd $MOS_ACCESS/$1
 
 
 	else
