@@ -1,0 +1,77 @@
+heat_template_version: 2015-04-30
+## Make prefix as param also
+parameters:
+  node_count:
+    type: number
+    default: 2
+    description: number of nodes
+  net_public:
+    type: string
+    hidden: true
+    default: public-dqs
+    constraints:
+    - custom_constraint: neutron.network
+  net_private:
+    type: string
+    hidden: true
+    default: omadjoudj-opscare-upgrade-workload-mon-private-net
+    constraints:
+    - custom_constraint: neutron.network
+  dns_domain:
+    type: string
+    hidden: true
+    default: hchk2.pc1.ams30.prod.booking.com.
+  dns_name:
+    type: string
+    hidden: true
+    default: tg
+  dns_name_suffix:
+    type: string
+    default: '12345'
+resources:
+  tg_volume:
+    type: OS::Cinder::Volume
+    properties:
+      size: 1
+      image: healthcheck-vm
+  tg_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network_id: { get_param: net_public }
+      port_id: { get_resource: tg_instance_port }
+      dns_domain: { get_param: dns_domain}
+      dns_name:
+        list_join: ['-', [ {get_param: dns_name}, {get_param: dns_name_suffix}]]
+  tg_instance_port:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_param: net_private }
+      security_groups: [{ get_resource: tg_secgroup }]
+  tg_secgroup:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      rules:
+      - remote_ip_prefix: 0.0.0.0/0
+        protocol: icmp
+  tg_instance:
+    type: OS::Nova::Server
+    properties:
+      flavor: m1.healthcheck
+      networks:
+      - port: { get_resource: tg_instance_port }
+      block_device_mapping:
+        - device_name: vda
+          volume_id: { get_resource: tg_volume }
+          delete_on_termination: true
+  tg_group:
+    type: OS::Heat::ResourceGroup
+    properties:
+      count: {get_param: node_count}
+      resource_def:
+        type: OS::Nova::Server
+        properties:
+          name: my-instance-%index%
+          flavor: my-flavor
+          image: my-image
+          networks:
+            --network: my-network
