@@ -8,7 +8,11 @@ set -euo pipefail
 KEYSTONE_POD_PREFIX="kubectl exec -it -n openstack deploy/keystone-client -c keystone-client -it --"
 TOOL_NAME="custom-opscare-openstack-cmp-upgrade-tool"
 CMP_INVENTORY="/tmp/cmp_inventory_$(date +%Y%m%d%H%M%S)_$$_$RANDOM.txt"
-
+# Colors
+RESTORE='\033[0m'
+RED='\033[00;31m'
+GREEN='\033[00;32m'
+YELLOW='\033[00;33m'
 
 function check_cmp_upgrade_readiness()
 {
@@ -63,13 +67,29 @@ function remove_nodeworkloadlock()
 {
     local cmp
     cmp="$1"
-    if kubectl get nodeworkloadlocks "$TOOL_NAME-$cmp" > /dev/null; then
+    if check_nodeworkloadlock "$cmp" > /dev/null; then
         echo "Releasing NodeWorkloadLock on the node $cmp"
         kubectl delete nodeworkloadlocks --grace-period=0 "$TOOL_NAME-$cmp"
     else
         echo "ERROR: NodeWorkloadLock on the node $cmp does not exist"
         exit 2
     fi
+}
+
+
+function check_nodeworkloadlock()
+{
+    local cmp
+    cmp="$1"
+
+    if kubectl get nodeworkloadlocks "$TOOL_NAME-$cmp" > /dev/null; then
+        echo -e "Check that the node $i has a nodeworkloadlock object \t $GREEN [OK] $RESTORE"
+        return 0
+    else
+        echo -e "Check that the node $i has a nodeworkloadlock object \t $RED [FAIL] $RESTORE"
+        return 1
+    fi
+
 }
 
 function lock_all_nodes()
@@ -81,9 +101,18 @@ function lock_all_nodes()
 
 }
 
+function check_locks_all_nodes()
+{
+    for i in $( cat "$CMP_INVENTORY" | awk '{print $1}' );
+    do
+        check_nodeworkloadlock "$i"
+    done
+
+}
+
 function usage()
 {
-    echo "Usage: $0 {lock-all-nodes | rack-release-lock <RACK> | node-release-lock <NODE>}"
+    echo "Usage: $0 {lock-all-nodes | check-locks | rack-release-lock <RACK> | node-release-lock <NODE>}"
 }
 
 # Main script starts here
@@ -99,7 +128,12 @@ case "$1" in
         echo "INFO: Creating a custom NodeWorkloadLock on all compute nodes"
         lock_all_nodes
         ;;
-
+    check-locks)
+        refresh_cmp_inventory
+        echo "INFO: Checking the custom NodeWorkloadLocks on all compute nodes."
+        echo -e "$YELLOW CAUTION: DO NOT PROCEED WITH THE UPGRADE IF ONE OF THESE CHECKS FAILS $RESTORE"
+        check_locks_all_nodes
+        ;;
     node-release-lock)
         if [ -z "$2" ]; then
             echo "ERROR: No Node specified."
@@ -136,5 +170,3 @@ case "$1" in
         exit 1
         ;;
 esac
-
-
