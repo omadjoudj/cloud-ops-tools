@@ -22,7 +22,7 @@ function check_cmp_upgrade_readiness()
     non_running_vms="$( $KEYSTONE_POD_PREFIX openstack server list --all -n -f value --limit 100000000000 --host "$cmp" |grep -v -w SHUTOFF )"
     if [[ -n "$non_running_vms" ]]; then
         echo "ERROR: $cmp still has running VMs."
-        echo "$non_running_vms" | awk '{print $1}'
+        echo "$non_running_vms" | awk '{print $1,$2}'
         return 1
     fi
     return 0
