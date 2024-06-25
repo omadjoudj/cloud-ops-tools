@@ -112,7 +112,7 @@ function check_locks_all_nodes()
 
 function usage()
 {
-    echo "Usage: $0 {lock-all-nodes | check-locks | rack-release-lock <RACK> | node-release-lock <NODE>}"
+    echo "Usage: $0 {lock-all-nodes | check-locks | rack-list-vms <RACK> | rack-release-lock <RACK> | node-release-lock <NODE>}"
 }
 
 # Main script starts here
@@ -157,6 +157,26 @@ case "$1" in
                 for i in $( grep "$2" "$CMP_INVENTORY" | awk '{print $1}' );
                 do
                     node_safe_release_lock "$i"
+                done
+            else
+                echo "ERROR: Rack $2 not found in the inventory"
+                exit 1
+            fi
+        fi
+        ;;
+    rack-list-vms)
+        if [ -z "$2" ]; then
+            echo "ERROR: No Rack specified."
+            usage
+            exit 1
+        else
+            refresh_cmp_inventory
+            if grep -q "$2" "$CMP_INVENTORY" ; then
+                for i in $( grep "$2" "$CMP_INVENTORY" | awk '{print $1}' );
+                do
+                    echo "[compute:$i]"
+                    $KEYSTONE_POD_PREFIX openstack server list --all -n -c ID -c Name -c Status -f value --limit 100000000000 --host "$i"
+                    echo
                 done
             else
                 echo "ERROR: Rack $2 not found in the inventory"

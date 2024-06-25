@@ -17,17 +17,6 @@ parameters:
     default: omadjoudj-opscare-upgrade-workload-mon-private-net
     constraints:
     - custom_constraint: neutron.network
-  dns_domain:
-    type: string
-    hidden: true
-    default: hchk2.pc1.ams30.prod.booking.com.
-  dns_name:
-    type: string
-    hidden: true
-    default: tg
-  dns_name_suffix:
-    type: string
-    default: '12345'
 resources:
   tg_volume:
     type: OS::Cinder::Volume
@@ -39,9 +28,6 @@ resources:
     properties:
       floating_network_id: { get_param: net_public }
       port_id: { get_resource: tg_instance_port }
-      dns_domain: { get_param: dns_domain}
-      dns_name:
-        list_join: ['-', [ {get_param: dns_name}, {get_param: dns_name_suffix}]]
   tg_instance_port:
     type: OS::Neutron::Port
     properties:
@@ -53,16 +39,7 @@ resources:
       rules:
       - remote_ip_prefix: 0.0.0.0/0
         protocol: icmp
-  tg_instance:
-    type: OS::Nova::Server
-    properties:
-      flavor: m1.healthcheck
-      networks:
-      - port: { get_resource: tg_instance_port }
-      block_device_mapping:
-        - device_name: vda
-          volume_id: { get_resource: tg_volume }
-          delete_on_termination: true
+    
   tg_group:
     type: OS::Heat::ResourceGroup
     properties:
@@ -73,8 +50,6 @@ resources:
       resource_def:
         type: OS::Nova::Server
         properties:
-          name: omadjoudj-opscare-upgrade-workload-mon-private-net-%index%
-          flavor: my-flavor
-          image: my-image
+          flavor: m1.healthcheck
           networks:
-            --network: my-network
+          - port: { get_resource: tg_instance_port }
