@@ -83,10 +83,10 @@ function check_nodeworkloadlock()
     cmp="$1"
 
     if kubectl get nodeworkloadlocks "$TOOL_NAME-$cmp" > /dev/null; then
-        echo -e "Check that the node $i has a nodeworkloadlock object \t $GREEN [OK] $RESTORE"
+        echo -e "Check that the node $cmp has a nodeworkloadlock object \t $GREEN [OK] $RESTORE"
         return 0
     else
-        echo -e "Check that the node $i has a nodeworkloadlock object \t $RED [FAIL] $RESTORE"
+        echo -e "Check that the node $cmp has a nodeworkloadlock object \t $RED [FAIL] $RESTORE"
         return 1
     fi
 
