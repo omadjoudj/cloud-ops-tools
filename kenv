@@ -13,7 +13,11 @@ else
         #export PS1="\w \[\e[41m\]($1 $2)\[\e[m\] \$ "
         #PS1="%{$fg[white]%}%n%{$reset_color%}@%{$fg[white]%}%m %{$fg[yellow]%} %{$bg[red]%}%~ [⚠️  PRODUCTION ⚠️ ] %{$reset_color%}%% "
         #PS1="%{$fg[white]%}%n%{$reset_color%}@%{$fg[white]%}%m %{$fg[yellow]%} %{$bg[red]%}%~ [⚠️  PRODUCTION - $1 ⚠️ ] %{$reset_color%}%% "
-        PS1="%{$fg[yellow]%} %{$bg[red]%} [⚠️  PRODUCTION - $1 - $2 ⚠️ ] %{$reset_color%} %{$fg[white]%}%n%{$reset_color%}@%{$fg[white]%}%m %~ %% "
+        if [[ "$1" == *"dev"* ]] || [[ "$1" == *"staging"* ]]; then
+            PS1="%{$fg[white]%} %{$bg[cyan]%} [$1 - $2] %{$reset_color%} %{$fg[white]%}%n%{$reset_color%}@%{$fg[white]%}%m %~ %% "
+        else
+            PS1="%{$fg[yellow]%} %{$bg[red]%} [⚠️  PRODUCTION - $1 - $2 ⚠️ ] %{$reset_color%} %{$fg[white]%}%n%{$reset_color%}@%{$fg[white]%}%m %~ %% "
+        fi
         cd $MOS_ACCESS/$1
 
 
