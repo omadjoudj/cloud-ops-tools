@@ -14,15 +14,15 @@ parameters:
   net_private:
     type: string
     hidden: true
-    default: omadjoudj-opscare-upgrade-workload-mon-private-net
+    default: omadjoudj-opscare-workload-mon-private-net
     constraints:
     - custom_constraint: neutron.network
-resources:
-  tg_volume:
-    type: OS::Cinder::Volume
-    properties:
-      size: 1
-      image: healthcheck-vm
+#resources:
+#  tg_volume:
+#    type: OS::Cinder::Volume
+#    properties:
+#      size: 1
+#      image: healthcheck-vm
   tg_floating_ip:
     type: OS::Neutron::FloatingIP
     properties:
