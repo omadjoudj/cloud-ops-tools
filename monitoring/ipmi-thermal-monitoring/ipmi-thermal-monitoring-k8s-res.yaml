@@ -84,7 +84,8 @@ spec:
         #args: ["-c", "sleep infinity"]
         command: ["/usr/bin/telegraf"]
         args: ["--config", "/etc/telegraf/telegraf.conf", "--config-directory", "/etc/telegraf/telegraf.d"]
-        image: 127.0.0.1:44301/stacklight/telegraf:v1.9.1-20240403023008
+        #image: 127.0.0.1:44301/stacklight/telegraf:v1.9.1-20240403023008
+        image: mirantis.azurecr.io/stacklight/telegraf:1-20240426131156
         imagePullPolicy: IfNotPresent
         securityContext:
           # IPMI reading requires root
