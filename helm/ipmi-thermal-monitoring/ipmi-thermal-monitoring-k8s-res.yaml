@@ -1,0 +1,116 @@
+## Custom monitoring for thermal and fan using IPMI
+## A: ~omadjoudj
+##
+--- 
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: custom-thermal-mon
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: telegraf-thermal-mon-config
+  namespace: custom-thermal-mon
+data:
+  telegraf.conf: |2
+    [global_tags]
+    [agent]
+      interval = "10s"
+      round_interval = false
+      metric_batch_size = 1000
+      metric_buffer_limit = 10000
+      collection_jitter = "2s"
+    [[inputs.exec]]
+      commands = ["/tmp/collect_thermal_metrics.sh"]
+      data_format = "influx"
+    [[outputs.prometheus_client]]
+      expiration_interval = "10m"
+      listen = ":9126"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: telegraf-thermal-script
+  namespace: custom-thermal-mon
+data:
+  collect_thermal_metrics.sh: |
+    #!/bin/bash
+    echo ipmi_thermal_metrics_inlet_degrees $(ipmitool -c sdr list | grep 01-Inlet | cut -d, -f2)
+    ipmitool -c sdr list | grep -i DutyCycle | cut -d, -f1,2 | tr ' ,' '_ '  | tr '[:upper:]' '[:lower:]' | while read fan speed; do echo ipmi_thermal_metrics_${fan}_speed_percent $speed ; done
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: telegraf-thermal
+  namespace: custom-thermal-mon
+  labels:
+    application: telegraf-thermal
+spec:
+  ports:
+  - name: prometheus-client
+    protocol: TCP
+    port: 9126
+    targetPort: 9126
+  selector:
+    application: telegraf-thermal
+  type: ClusterIP
+  sessionAffinity: None
+
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: telegraf-thermal
+  namespace: custom-thermal-mon
+spec:
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      application: telegraf-thermal
+  template:
+    metadata:
+      labels:
+        application: telegraf-thermal
+    spec:
+      shareProcessNamespace: true
+      containers:
+      - name: telegraf-checker
+        #command: ["/bin/sh"]
+        #args: ["-c", "sleep infinity"]
+        command: ["/usr/bin/telegraf"]
+        args: ["--config", "/etc/telegraf/telegraf.conf", "--config-directory", "/etc/telegraf/telegraf.d"]
+        image: 127.0.0.1:44301/stacklight/telegraf:v1.9.1-20240403023008
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          # IPMI reading requires root
+          privileged: true
+          readOnlyRootFilesystem: true
+        volumeMounts:
+        - mountPath: /etc/telegraf
+          name: telegraf-thermal-mon-config
+        - mountPath: /tmp/collect_thermal_metrics.sh
+          name: telegraf-thermal-script
+          subPath: collect_thermal_metrics.sh
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
+        fsGroup: 0
+      #nodeSelector:
+      volumes:
+      #- hostPath:
+      #    path: /run
+      #    type: ""
+      #  name: run
+      - name: telegraf-thermal-mon-config
+        configMap:
+          defaultMode: 0420
+          name: telegraf-thermal-mon-config
+      - name: telegraf-thermal-script
+        configMap:
+          defaultMode: 0755
+          name: telegraf-thermal-script
