@@ -1,0 +1,42 @@
+kubernetesClusterDomain: cluster.local
+monConfig:
+  telegrafConf: |-
+    [global_tags]
+    [agent]
+      interval = "160s"
+      round_interval = false
+      metric_batch_size = 1000
+      metric_buffer_limit = 10000
+      collection_jitter = "20s"
+    [[inputs.exec]]
+      commands = ["/tmp/collect_thermal_metrics.sh"]
+      data_format = "influx"
+      timeout = "120s"
+    [[outputs.prometheus_client]]
+      expiration_interval = "10m"
+      listen = ":9126"
+script:
+  collectThermalMetricsSh: |-
+    #!/bin/sh
+    echo ipmi_thermal_metrics_inlet_degrees value=$(ipmitool -c sdr list | grep 01-Inlet | cut -d, -f2)
+    ipmitool -c sdr list | grep -i DutyCycle | cut -d, -f1,2 | tr ' ,' '_ '  | tr '[:upper:]' '[:lower:]' | while read fan speed; do echo ipmi_thermal_metrics_${fan}_speed_percent value=$speed ; done
+telegrafThermal:
+  ports:
+  - name: prometheus-client
+    port: 9126
+    protocol: TCP
+    targetPort: 9126
+  telegrafChecker:
+    args:
+    - --config
+    - /etc/telegraf/telegraf.conf
+    - --config-directory
+    - /etc/telegraf/telegraf.d
+    containerSecurityContext:
+      privileged: true
+      readOnlyRootFilesystem: true
+    image:
+      repository: mirantis.azurecr.io/stacklight/telegraf
+      tag: 1-20240426131156
+    imagePullPolicy: IfNotPresent
+  type: ClusterIP

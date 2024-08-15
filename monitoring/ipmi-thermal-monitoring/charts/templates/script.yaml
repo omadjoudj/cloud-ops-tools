@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "ipmi-thermal-monitoring.fullname" . }}-script
+  labels:
+  {{- include "ipmi-thermal-monitoring.labels" . | nindent 4 }}
+data:
+  collect_thermal_metrics.sh: {{ .Values.script.collectThermalMetricsSh | toYaml
+    | indent 1 }}

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "ipmi-thermal-monitoring.fullname" . }}-telegraf-thermal
+  labels:
+    application: telegraf-thermal
+  {{- include "ipmi-thermal-monitoring.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.telegrafThermal.type }}
+  selector:
+    application: telegraf-thermal
+  {{- include "ipmi-thermal-monitoring.selectorLabels" . | nindent 4 }}
+  ports:
+	{{- .Values.telegrafThermal.ports | toYaml | nindent 2 }}

@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "ipmi-thermal-monitoring.fullname" . }}-telegraf-thermal
+  labels:
+  {{- include "ipmi-thermal-monitoring.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      application: telegraf-thermal
+    {{- include "ipmi-thermal-monitoring.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        application: telegraf-thermal
+      {{- include "ipmi-thermal-monitoring.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - args: {{- toYaml .Values.telegrafThermal.telegrafChecker.args | nindent 8 }}
+        command:
+        - /usr/bin/telegraf
+        env:
+        - name: KUBERNETES_CLUSTER_DOMAIN
+          value: {{ quote .Values.kubernetesClusterDomain }}
+        image: {{ .Values.telegrafThermal.telegrafChecker.image.repository }}:{{ .Values.telegrafThermal.telegrafChecker.image.tag
+          | default .Chart.AppVersion }}
+        imagePullPolicy: {{ .Values.telegrafThermal.telegrafChecker.imagePullPolicy }}
+        name: telegraf-checker
+        resources: {}
+        securityContext: {{- toYaml .Values.telegrafThermal.telegrafChecker.containerSecurityContext
+          | nindent 10 }}
+        volumeMounts:
+        - mountPath: /etc/telegraf
+          name: telegraf-thermal-mon-config
+        - mountPath: /tmp/collect_thermal_metrics.sh
+          name: telegraf-thermal-script
+          subPath: collect_thermal_metrics.sh
+        - mountPath: /lib
+          name: lib
+        - mountPath: /usr/bin/ipmitool
+          name: usr-bin
+      securityContext:
+        fsGroup: 0
+        runAsGroup: 0
+        runAsUser: 0
+      shareProcessNamespace: true
+      volumes:
+      - hostPath:
+          path: /lib
+          type: Directory
+        name: lib
+      - hostPath:
+          path: /usr/bin/ipmitool
+          type: File
+        name: usr-bin
+      - configMap:
+          defaultMode: 272
+          name: {{ include "ipmi-thermal-monitoring.fullname" . }}-mon-config
+        name: telegraf-thermal-mon-config
+      - configMap:
+          defaultMode: 493
+          name: {{ include "ipmi-thermal-monitoring.fullname" . }}-script
+        name: telegraf-thermal-script
