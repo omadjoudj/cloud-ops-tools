@@ -18,14 +18,15 @@ data:
   telegraf.conf: |2
     [global_tags]
     [agent]
-      interval = "10s"
+      interval = "160s"
       round_interval = false
       metric_batch_size = 1000
       metric_buffer_limit = 10000
-      collection_jitter = "2s"
+      collection_jitter = "20s"
     [[inputs.exec]]
       commands = ["/tmp/collect_thermal_metrics.sh"]
       data_format = "influx"
+      timeout = "120s"
     [[outputs.prometheus_client]]
       expiration_interval = "10m"
       listen = ":9126"
@@ -37,9 +38,9 @@ metadata:
   namespace: custom-thermal-mon
 data:
   collect_thermal_metrics.sh: |
-    #!/bin/bash
-    echo ipmi_thermal_metrics_inlet_degrees $(ipmitool -c sdr list | grep 01-Inlet | cut -d, -f2)
-    ipmitool -c sdr list | grep -i DutyCycle | cut -d, -f1,2 | tr ' ,' '_ '  | tr '[:upper:]' '[:lower:]' | while read fan speed; do echo ipmi_thermal_metrics_${fan}_speed_percent $speed ; done
+    #!/bin/sh
+    echo ipmi_thermal_metrics_inlet_degrees value=$(ipmitool -c sdr list | grep 01-Inlet | cut -d, -f2)
+    ipmitool -c sdr list | grep -i DutyCycle | cut -d, -f1,2 | tr ' ,' '_ '  | tr '[:upper:]' '[:lower:]' | while read fan speed; do echo ipmi_thermal_metrics_${fan}_speed_percent value=$speed ; done
 
 
 ---
@@ -97,16 +98,24 @@ spec:
         - mountPath: /tmp/collect_thermal_metrics.sh
           name: telegraf-thermal-script
           subPath: collect_thermal_metrics.sh
+        - mountPath: /lib
+          name: lib
+        - mountPath: /usr/bin/ipmitool
+          name: usr-bin
       securityContext:
         runAsUser: 0
         runAsGroup: 0
         fsGroup: 0
       #nodeSelector:
       volumes:
-      #- hostPath:
-      #    path: /run
-      #    type: ""
-      #  name: run
+      - hostPath:
+          path: /lib
+          type: "Directory"
+        name: lib
+      - hostPath:
+          path: /usr/bin/ipmitool
+          type: "File"
+        name: usr-bin
       - name: telegraf-thermal-mon-config
         configMap:
           defaultMode: 0420
