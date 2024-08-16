@@ -1,7 +1,7 @@
 alias k='kubectl'
 #source <(kubectl completion bash)
-. ~/.kubectl_bash_compl
-#complete -o default -F __start_kubectl k
+source <(kubectl completion zsh)
+complete -o default -F __start_kubectl k
 
 alias r="kubectl exec -n rook-ceph deploy/rook-ceph-tools -it --"
 alias o="kubectl exec -it -n openstack deploy/keystone-client -c keystone-client -it --"
