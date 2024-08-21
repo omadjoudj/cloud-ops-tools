@@ -1,0 +1,14 @@
+
+             telegraf-thermal:
+                kubernetes_sd_configs:
+                - namespaces:
+                    names:
+                    - custom-thermal-mon
+                  role: pod
+                relabel_configs:
+                - action: keep
+                  regex: telegraf-thermal
+                  source_labels:
+                  - __meta_kubernetes_pod_label_application
+                scrape_interval: 5m
+                scrape_timeout: 5m

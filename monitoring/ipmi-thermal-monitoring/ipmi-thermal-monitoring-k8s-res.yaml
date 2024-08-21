@@ -29,7 +29,7 @@ data:
       timeout = "120s"
     [[outputs.prometheus_client]]
       expiration_interval = "10m"
-      listen = ":9126"
+      listen = ":80"
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -44,23 +44,23 @@ data:
 
 
 ---
-apiVersion: v1
-kind: Service
-metadata:
-  name: telegraf-thermal
-  namespace: custom-thermal-mon
-  labels:
-    application: telegraf-thermal
-spec:
-  ports:
-  - name: prometheus-client
-    protocol: TCP
-    port: 9126
-    targetPort: 9126
-  selector:
-    application: telegraf-thermal
-  type: ClusterIP
-  sessionAffinity: None
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: telegraf-thermal
+#   namespace: custom-thermal-mon
+#   labels:
+#     application: telegraf-thermal
+# spec:
+#   ports:
+#   - name: prometheus-client
+#     protocol: TCP
+#     port: 9126
+#     targetPort: 9126
+#   selector:
+#     application: telegraf-thermal
+#   type: ClusterIP
+#   sessionAffinity: None
 
 ---
 apiVersion: apps/v1
@@ -100,8 +100,18 @@ spec:
           subPath: collect_thermal_metrics.sh
         - mountPath: /lib
           name: lib
+        - mountPath: /bin/bash
+          name: bin-bash
+        - mountPath: /bin/sh
+          name: bin-sh
+        - mountPath: /bin/grep
+          name: bin-grep
+        - mountPath: /bin/cut
+          name: bin-cut
+        - mountPath: /bin/tr
+          name: bin-tr
         - mountPath: /usr/bin/ipmitool
-          name: usr-bin
+          name: usr-bin-ipmitool
       securityContext:
         runAsUser: 0
         runAsGroup: 0
@@ -115,7 +125,27 @@ spec:
       - hostPath:
           path: /usr/bin/ipmitool
           type: "File"
-        name: usr-bin
+        name: usr-bin-ipmitool
+      - hostPath:
+          path: /bin/bash
+          type: "File"
+        name: bin-bash
+      - hostPath:
+          path: /bin/sh
+          type: "File"
+        name: bin-sh
+      - hostPath:
+          path: /bin/cut
+          type: "File"
+        name: bin-cut
+      - hostPath:
+          path: /bin/grep
+          type: "File"
+        name: bin-grep
+      - hostPath:
+          path: /bin/tr
+          type: "File"
+        name: bin-tr
       - name: telegraf-thermal-mon-config
         configMap:
           defaultMode: 0420
