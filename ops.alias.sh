@@ -1,4 +1,5 @@
 alias k='kubectl'
+alias m='multipass'
 #source <(kubectl completion bash)
 source <(kubectl completion zsh)
 complete -o default -F __start_kubectl k
