@@ -1,6 +1,7 @@
 #!/bin/bash
 # Contact: omadjoudj
 # TODO: Integrate it with Migrator tool and create a function around it to drain the node or stop the workload before releasing the lock
+# TODO: Refactor to remove repetitions
 
 set -euo pipefail
 
@@ -44,7 +45,7 @@ function refresh_cmp_inventory()
 {
 
     #$KEYSTONE_POD_PREFIX openstack compute service list --service nova-compute -f value -c Host > $CMP_INVENTORY
-    echo "INFO: Refreshing compute node inventory"
+    #echo "INFO: Refreshing compute node inventory"
     kubectl get nodes -l openstack-compute-node=enabled -o json | jq -j '.items[] | .metadata.name, " ", .metadata.labels."kaas.mirantis.com/machine-name", "\n"' | sort -k 2 > "$CMP_INVENTORY"
 }
 
@@ -52,7 +53,7 @@ function create_nodeworkloadlock()
 {
     local cmp
     cmp="$1"
-    echo "Creating NodeWorkloadLock:"
+    echo "INFO: Creating NodeWorkloadLock:"
     echo "apiVersion: lcm.mirantis.com/v1alpha1
 kind: NodeWorkloadLock
 metadata:
@@ -68,7 +69,7 @@ function remove_nodeworkloadlock()
     local cmp
     cmp="$1"
     if check_nodeworkloadlock "$cmp" > /dev/null; then
-        echo "Releasing NodeWorkloadLock on the node $cmp"
+        echo "INFO: Releasing NodeWorkloadLock on the node $cmp"
         kubectl delete nodeworkloadlocks --grace-period=0 "$TOOL_NAME-$cmp"
     else
         echo "ERROR: NodeWorkloadLock on the node $cmp does not exist"
@@ -112,7 +113,7 @@ function check_locks_all_nodes()
 
 function usage()
 {
-    echo "Usage: $0 {lock-all-nodes | check-locks | rack-list-vms <RACK> | rack-release-lock <RACK> | node-release-lock <NODE>}"
+    echo "Usage: $0 {lock-all-nodes | check-locks | list-vms | rack-list-vms <RACK> | rack-release-lock <RACK> | rack-disable <RACK> | rack-live-migrate <RACK> | node-release-lock <NODE>}"
 }
 
 # Main script starts here
@@ -157,6 +158,9 @@ case "$1" in
                 for i in $( grep "$2" "$CMP_INVENTORY" | awk '{print $1}' );
                 do
                     node_safe_release_lock "$i"
+                    # Enable back the nodes so we dont end up with all nodes left disabled
+                    # LCM will disable/enable the node again when LCM picks the node for upgrade
+                    $KEYSTONE_POD_PREFIX openstack compute service set --enable "$i" nova-compute
                 done
             else
                 echo "ERROR: Rack $2 not found in the inventory"
@@ -183,6 +187,67 @@ case "$1" in
                 exit 1
             fi
         fi
+        ;;
+
+    rack-disable)
+         if [ -z "$2" ]; then
+            echo "ERROR: No Rack specified."
+            usage
+            exit 1
+        else
+            refresh_cmp_inventory
+            if grep -q "$2" "$CMP_INVENTORY" ; then
+                for i in $( grep "$2" "$CMP_INVENTORY" | awk '{print $1}' );
+                do
+                    echo "INFO: Disabling the rack $2 / node $i from the scheduler"
+                    $KEYSTONE_POD_PREFIX openstack compute service set --disable --disable-reason="Preparing for upgrade" "$i" nova-compute
+                done
+            else
+                echo "ERROR: Rack $2 not found in the inventory"
+                exit 1
+            fi
+        fi
+
+        ;;
+    rack-live-migrate)
+        if [ -z "$2" ]; then
+            echo "ERROR: No Rack specified."
+            usage
+            exit 1
+        else
+            refresh_cmp_inventory
+            if grep -q "$2" "$CMP_INVENTORY" ; then
+                for i in $( grep "$2" "$CMP_INVENTORY" | awk '{print $1}' );
+                do
+                    echo "INFO: Live-migrating ${i}'s VMs"
+                    ## "|| true" in case the node is empty, so it continues to the next compute
+                    $KEYSTONE_POD_PREFIX bash -c "(openstack server list --all -n -c ID -f value --status ACTIVE --limit 100000000000 --host "$i" | xargs -L1 -P5 openstack server migrate --live-migration) || true"
+                done
+                echo "INFO: Use << cmp-upgrade-tool.sh rack-list-vms $2 >> to monitor the progress"
+            else
+                echo "ERROR: Rack $2 not found in the inventory"
+                exit 1
+            fi
+        fi
+        ;; 
+    list-vms)
+            refresh_cmp_inventory
+            aggr_inventory=$(mktemp /tmp/aggr.XXXXXXXXXXXXX)
+            $KEYSTONE_POD_PREFIX openstack aggregate list  -f csv --quote minimal --long > "$aggr_inventory"
+            #echo "Machine/Rack,Compute,AZ,Aggregate,VM ID,VM Name,VM Status,Upgraded"
+            echo "Machine/Rack,AZ,Aggregate,VM ID,VM Name,VM Status,Upgraded"
+            for i in $( cat "$CMP_INVENTORY" | awk '{print $1}' );
+            do
+                machine_name="$(grep "$i" "$CMP_INVENTORY" | awk '{print $2}')"
+                aggr="$(grep "$i" "$aggr_inventory" | cut -d, -f2 | tr '\n' ' ' | tr -s ' ')"
+                az="$(grep "$i" "$aggr_inventory" | cut -d, -f3 | tr '\n' ' ' | tr -s ' ')"
+                #echo "$rack,$machine_name,$aggr,$az,$($KEYSTONE_POD_PREFIX openstack server list --all -n -c ID -c Name -c Status -f csv --quote minimal --limit 100000000000 --host "$i" | awk 'NR>1')"
+                for line in $($KEYSTONE_POD_PREFIX openstack server list --all -n -c ID -c Name -c Status -f csv --quote minimal --limit 100000000000 --host "$i" | awk 'NR>1') ; do
+                    echo "$machine_name,${az% },${aggr% },$line"
+
+                done
+                echo ",,,,,,"
+            done
         ;;
     *)
         echo "Invalid subcommand"
