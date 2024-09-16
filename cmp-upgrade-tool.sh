@@ -234,19 +234,16 @@ case "$1" in
             refresh_cmp_inventory
             aggr_inventory=$(mktemp /tmp/aggr.XXXXXXXXXXXXX)
             $KEYSTONE_POD_PREFIX openstack aggregate list  -f csv --quote minimal --long > "$aggr_inventory"
-            #echo "Machine/Rack,Compute,AZ,Aggregate,VM ID,VM Name,VM Status,Upgraded"
-            echo "Machine/Rack,AZ,Aggregate,VM ID,VM Name,VM Status,Upgraded"
+            echo "Machine/Rack,AZ,Aggregate,VM ID,VM Name,VM Status,Network,Upgraded"
             for i in $( cat "$CMP_INVENTORY" | awk '{print $1}' );
             do
                 machine_name="$(grep "$i" "$CMP_INVENTORY" | awk '{print $2}')"
-                aggr="$(grep "$i" "$aggr_inventory" | cut -d, -f2 | tr '\n' ' ' | tr -s ' ')"
-                az="$(grep "$i" "$aggr_inventory" | cut -d, -f3 | tr '\n' ' ' | tr -s ' ')"
-                #echo "$rack,$machine_name,$aggr,$az,$($KEYSTONE_POD_PREFIX openstack server list --all -n -c ID -c Name -c Status -f csv --quote minimal --limit 100000000000 --host "$i" | awk 'NR>1')"
-                for line in $($KEYSTONE_POD_PREFIX openstack server list --all -n -c ID -c Name -c Status -f csv --quote minimal --limit 100000000000 --host "$i" | awk 'NR>1') ; do
+                aggr="$((grep "$i" "$aggr_inventory" | cut -d, -f2 | tr '\n' ' ' | tr -s ' ') || true)"
+                az="$((grep "$i" "$aggr_inventory" | cut -d, -f3 | tr '\n' ' ' | tr -s ' ') || true)"
+                $KEYSTONE_POD_PREFIX openstack server list --all -n -c ID -c Name -c Status -c Networks -f csv --quote minimal --limit 100000000000 --host "$i" | awk 'NR>1' | while read line; do
                     echo "$machine_name,${az% },${aggr% },$line"
 
                 done
-                echo ",,,,,,"
             done
         ;;
     *)
