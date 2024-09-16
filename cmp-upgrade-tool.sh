@@ -219,11 +219,11 @@ case "$1" in
             if grep -q "$2" "$CMP_INVENTORY" ; then
                 for i in $( grep "$2" "$CMP_INVENTORY" | awk '{print $1}' );
                 do
-                    echo "INFO: Live-migrating ${i}'s VMs"
-                    ## "|| true" in case the node is empty, so it continues to the next compute
-                    $KEYSTONE_POD_PREFIX bash -c "(openstack server list --all -n -c ID -f value --status ACTIVE --limit 100000000000 --host "$i" | xargs -L1 -P5 openstack server migrate --live-migration) || true"
+                    echo "INFO: Live-migrating VMs from Rack $2 / Node ${i}"
+                    ## "|| true" in case the node is empty or a migration fails, so it continues to the next compute
+                    $KEYSTONE_POD_PREFIX bash -c "(openstack server list --all -n -c ID -f value --status ACTIVE --limit 100000000000 --host "$i" | xargs --no-run-if-empty -L1 -P5 openstack server migrate --live-migration) || true"
                 done
-                echo "INFO: Use << cmp-upgrade-tool.sh rack-list-vms $2 >> to monitor the progress"
+                echo -e "INFO: Use $YELLOW << cmp-upgrade-tool.sh rack-list-vms $2 >> $RESTORE to monitor the progress"
             else
                 echo "ERROR: Rack $2 not found in the inventory"
                 exit 1
