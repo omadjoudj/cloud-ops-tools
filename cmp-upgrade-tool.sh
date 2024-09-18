@@ -113,7 +113,7 @@ function check_locks_all_nodes()
 
 function usage()
 {
-    echo "Usage: $0 {lock-all-nodes | check-locks | list-vms | rack-list-vms <RACK> | rack-release-lock <RACK> | rack-disable <RACK> | rack-live-migrate <RACK> | node-release-lock <NODE>}"
+    echo "Usage: $0 {lock-all-nodes | check-locks | list-vms | rack-list-vms <RACK> | rack-release-lock <RACK> | rack-disable <RACK> | rack-enable <RACK>| rack-live-migrate <RACK> | node-release-lock <NODE>}"
 }
 
 # Main script starts here
@@ -200,14 +200,32 @@ case "$1" in
                 for i in $( grep "$2" "$CMP_INVENTORY" | awk '{print $1}' );
                 do
                     echo "INFO: Disabling the rack $2 / node $i from the scheduler"
-                    $KEYSTONE_POD_PREFIX openstack compute service set --disable --disable-reason="Preparing for upgrade" "$i" nova-compute
+                    $KEYSTONE_POD_PREFIX openstack compute service set --disable --disable-reason="$TOOL_NAME: Preparing for upgrade" "$i" nova-compute
                 done
             else
                 echo "ERROR: Rack $2 not found in the inventory"
                 exit 1
             fi
         fi
-
+        ;;
+    rack-enable)
+        if [ -z "$2" ]; then
+            echo "ERROR: No Rack specified."
+            usage
+            exit 1
+        else
+            refresh_cmp_inventory
+            if grep -q "$2" "$CMP_INVENTORY" ; then
+                for i in $( grep "$2" "$CMP_INVENTORY" | awk '{print $1}' );
+                do
+                    echo "INFO: Enabling the rack $2 / node $i from the scheduler"
+                    $KEYSTONE_POD_PREFIX openstack compute service set --enable "$i" nova-compute
+                done
+            else
+                echo "ERROR: Rack $2 not found in the inventory"
+                exit 1
+            fi
+        fi
         ;;
     rack-live-migrate)
         if [ -z "$2" ]; then
