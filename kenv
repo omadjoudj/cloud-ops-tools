@@ -13,7 +13,6 @@ else
         cloud_region_name="$( echo $1| cut -d- -f2 | tr '_' '-' )"
         kubectl config set-context --cluster "$1" --current
         if [[ "$1" == *"mosk"* ]]; then 
-            echo "bkos-creds --region $cloud_region_name --project admin --env"
             eval $(bkos-creds --region $cloud_region_name --project admin --env)
         fi
         cd $MOS_ACCESS/eu-${cloud_region_name}
