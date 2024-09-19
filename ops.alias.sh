@@ -10,5 +10,5 @@ alias silence-list="kubectl -n stacklight exec sts/prometheus-alertmanager -c pr
 alias silence-del="kubectl -n stacklight exec sts/prometheus-alertmanager -c prometheus-alertmanager -- amtool --alertmanager.url http://127.0.0.1:9093 silence expire"
 alias silence-add="kubectl -n stacklight exec sts/prometheus-alertmanager -c prometheus-alertmanager -- amtool --alertmanager.url http://127.0.0.1:9093 silence add -a $USER "
 
-alias benv='. ~/kenv `cat ~/.kube/config| grep "\- name:" | cut -d: -f2 | tr -d " " | fzf`'
+alias benv='. ~/kenv `kubectl config get-contexts --no-headers=false -o name | fzf`'
 
