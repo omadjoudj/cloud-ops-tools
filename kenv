@@ -1,29 +1,20 @@
 #!/bin/bash
 MOS_ACCESS=~/workspace/mos_access/B.com/
 
-if [ $# -lt 2 ]; then
+if [ $# -lt 1 ]; then
     echo "No enough args"
     exit 1
 else
-	if [[ $2 == "mosk" || $2 == "mcc" ]]; then
-		export KUBECONFIG=$MOS_ACCESS/$1/$2.kubeconfig
-		#export PS1="\[\e[41m\]$1\[\e[m\] $PS1"
-        #export PS1="\w \[\e[41m\]($1 $2)\[\e[m\] \$ "
-        #export PS1="\w ($1 $2) \$ "
-        #export PS1="\w \[\e[41m\]($1 $2)\[\e[m\] \$ "
-        #PS1="%{$fg[white]%}%n%{$reset_color%}@%{$fg[white]%}%m %{$fg[yellow]%} %{$bg[red]%}%~ [⚠️  PRODUCTION ⚠️ ] %{$reset_color%}%% "
-        #PS1="%{$fg[white]%}%n%{$reset_color%}@%{$fg[white]%}%m %{$fg[yellow]%} %{$bg[red]%}%~ [⚠️  PRODUCTION - $1 ⚠️ ] %{$reset_color%}%% "
         if [[ "$1" == *"dev"* ]] || [[ "$1" == *"staging"* ]]; then
             PS1="%{$fg[white]%} %{$bg[cyan]%} [$1 - $2] %{$reset_color%} %{$fg[white]%}%n%{$reset_color%}@%{$fg[white]%}%m %~ %% "
         else
             PS1="%{$fg[yellow]%} %{$bg[red]%} [⚠️  PRODUCTION - $1 - $2 ⚠️ ] %{$reset_color%} %{$fg[white]%}%n%{$reset_color%}@%{$fg[white]%}%m %~ %% "
         fi
-        cd $MOS_ACCESS/$1
-
-
-	else
-		echo "2nd arg must be mosk or mcc"
-    	exit 1
-	fi
+        cloud_region_name="$( echo $1| cut -d- -f2 | tr '_' '-' )"
+        kubectl config set-context $1
+        if [[ "$1" == *"mosk"* ]]; then 
+            eval $(bkos-creds --region $cloud_region_name --project admin --env)
+        fi
+        cd $MOS_ACCESS/eu-${cloud_region_name}
 
 fi
