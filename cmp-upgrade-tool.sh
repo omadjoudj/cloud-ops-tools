@@ -157,7 +157,12 @@ case "$1" in
                 grep "$2" "$CMP_INVENTORY"
                 for i in $( grep "$2" "$CMP_INVENTORY" | awk '{print $1}' );
                 do
-                    node_safe_release_lock "$i"
+                    rack_release_lock_ops=${3:-safe}
+                    if [[ "$rack_release_lock_ops" = "force_unsafe" ]]; then
+                        remove_nodeworkloadlock "$i"
+                    else
+                        node_safe_release_lock "$i"
+                    fi
                     # Enable back the nodes so we dont end up with all nodes left disabled
                     # LCM will disable/enable the node again when LCM picks the node for upgrade
                     $KEYSTONE_POD_PREFIX openstack compute service set --enable "$i" nova-compute
@@ -239,7 +244,7 @@ case "$1" in
                 do
                     echo "INFO: Live-migrating VMs from Rack $2 / Node ${i}"
                     ## "|| true" in case the node is empty or a migration fails, so it continues to the next compute
-                    $KEYSTONE_POD_PREFIX bash -c "(openstack server list --all -n -c ID -f value --status ACTIVE --limit 100000000000 --host "$i" | xargs --no-run-if-empty -L1 -P5 openstack server migrate --live-migration) || true"
+                    $KEYSTONE_POD_PREFIX bash -c "(openstack server list --all -n -c ID -f value --status ACTIVE --limit 100000000000 --host $i | xargs --no-run-if-empty -L1 -P5 openstack server migrate --live-migration) || true"
                 done
                 echo -e "INFO: Use $YELLOW << cmp-upgrade-tool.sh rack-list-vms $2 >> $RESTORE to monitor the progress"
             else
@@ -256,8 +261,8 @@ case "$1" in
             for i in $( cat "$CMP_INVENTORY" | awk '{print $1}' );
             do
                 machine_name="$(grep "$i" "$CMP_INVENTORY" | awk '{print $2}')"
-                aggr="$((grep "$i" "$aggr_inventory" | cut -d, -f2 | tr '\n' ' ' | tr -s ' ') || true)"
-                az="$((grep "$i" "$aggr_inventory" | cut -d, -f3 | tr '\n' ' ' | tr -s ' ') || true)"
+                aggr="$( (grep "$i" "$aggr_inventory" | cut -d, -f2 | tr '\n' ' ' | tr -s ' ') || true)"
+                az="$( (grep "$i" "$aggr_inventory" | cut -d, -f3 | tr '\n' ' ' | tr -s ' ') || true)"
                 $KEYSTONE_POD_PREFIX openstack server list --all -n -c ID -c Name -c Status -c Networks -f csv --quote minimal --limit 100000000000 --host "$i" | awk 'NR>1' | while read line; do
                     echo "$machine_name,${az% },${aggr% },$line"
 
