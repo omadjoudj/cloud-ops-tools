@@ -11,7 +11,10 @@ else
             PS1="%{$fg[yellow]%} %{$bg[red]%} [⚠️  PRODUCTION - $1 - $2 ⚠️ ] %{$reset_color%} %{$fg[white]%}%n%{$reset_color%}@%{$fg[white]%}%m %~ %% "
         fi
         cloud_region_name="$( echo $1| cut -d- -f2 | tr '_' '-' )"
-        kubectl config use-context "$1"
+        #kubectl config use-context "$1"
+        kubectl_path="$(which kubectl)"
+        alias kubectl="$kubectl_path --context $1"
+        alias k="$kubectl_path --context $1"
         if [[ "$1" == *"mosk"* ]]; then 
             eval $(bkos-creds --region $cloud_region_name --project admin --env)
         fi
