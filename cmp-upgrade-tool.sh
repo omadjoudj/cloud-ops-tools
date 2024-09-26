@@ -30,7 +30,11 @@ function check_env_correctness()
     local keystone_ingress_fqdn
     local keystone_fqdn_from_envvar
 
-    keystone_ingress_fqdn="$(kubectl get ingress -n openstack keystone-namespace-fqdn -o jsonpath='{.spec.rules[0].host}')"
+    if [ -z "$KUBE_CONTEXT" ] && [ "$KUBE_CONTEXT" = '' ]; then
+        abort "KUBE_CONTEXT is empty or undefined. To get a list of contexts, use: kubectl config get-contexts"
+    fi
+
+    keystone_ingress_fqdn="$(kubectl --context $KUBE_CONTEXT get ingress -n openstack keystone-namespace-fqdn -o jsonpath='{.spec.rules[0].host}')"
     keystone_fqdn_from_envvar="$(echo $OS_AUTH_URL | cut -d/ -f3)"
     if [[ "$keystone_ingress_fqdn" != "$keystone_fqdn_from_envvar" ]]; then
         abort "ERROR: Wrong Cloud detected. OS_AUTH_URL env variable does not match keystone's Ingress FQDN"
@@ -45,22 +49,22 @@ function generate_ansible_inventory()
     
     echo "# Export MCC Kubeconfig first"
     # Get MOSK cluster's namespace
-    mosk_ns=$(kubectl get cluster -A --no-headers | awk '{print $1}' | grep -v '^default')
+    mosk_ns=$(kubectl  --context $KUBE_CONTEXT  get cluster -A --no-headers | awk '{print $1}' | grep -v '^default')
     echo "[mcc_mgr]"
-    kubectl get lcmmachine -n default -o wide --no-headers | awk '{print $1,"kaas_name=",$6,"ansible_host=",$5}' | sed 's/= /=/g'
+    kubectl  --context $KUBE_CONTEXT  get lcmmachine -n default -o wide --no-headers | awk '{print $1,"kaas_name=",$6,"ansible_host=",$5}' | sed 's/= /=/g'
     echo "[mosk_mgr]"
-    kubectl get lcmmachine -n "$mosk_ns" -o wide --no-headers | grep mgr | awk '{print $1,"kaas_name=",$6,"ansible_host=",$5}' | sed 's/= /=/g'
+    kubectl  --context $KUBE_CONTEXT  get lcmmachine -n "$mosk_ns" -o wide --no-headers | grep mgr | awk '{print $1,"kaas_name=",$6,"ansible_host=",$5}' | sed 's/= /=/g'
     # CTL special case: needs to get the IP of k8s-ext
     echo "[ctl]"
-    #kubectl get lcmmachine -n $mosk_ns -o wide --no-headers | grep -E "ctl|sl|gtw" | awk '{print $1,"kaas_name=",$6,"ansible_host=",$5}' | sed 's/= /=/g'
-    kubectl get lcmmachine -n "$mosk_ns" -o wide --no-headers | grep -E "ctl|sl|gtw" | awk '{print $1,$6}' | while read node_name kaas_name
+    #kubectl  --context $KUBE_CONTEXT  get lcmmachine -n $mosk_ns -o wide --no-headers | grep -E "ctl|sl|gtw" | awk '{print $1,"kaas_name=",$6,"ansible_host=",$5}' | sed 's/= /=/g'
+    kubectl  --context $KUBE_CONTEXT  get lcmmachine -n "$mosk_ns" -o wide --no-headers | grep -E "ctl|sl|gtw" | awk '{print $1,$6}' | while read node_name kaas_name
     do
-        echo $node_name "kaas_name="$kaas_name "ansible_host="$(kubectl get ipamhost -n "$mosk_ns" $node_name -o json 2>/dev/null | jq -r '.status.netconfigCandidate.bridges."k8s-ext".addresses[0]' | sed 's|/[0-9][0-9]||')
+        echo $node_name "kaas_name="$kaas_name "ansible_host="$(kubectl  --context $KUBE_CONTEXT  get ipamhost -n "$mosk_ns" $node_name -o json 2>/dev/null | jq -r '.status.netconfigCandidate.bridges."k8s-ext".addresses[0]' | sed 's|/[0-9][0-9]||')
     done
     echo "[osd]"
-    kubectl get lcmmachine -n "$mosk_ns" -o wide --no-headers | grep osd | awk '{print $1,"kaas_name=",$6,"ansible_host=",$5}' | sed 's/= /=/g'
+    kubectl  --context $KUBE_CONTEXT  get lcmmachine -n "$mosk_ns" -o wide --no-headers | grep osd | awk '{print $1,"kaas_name=",$6,"ansible_host=",$5}' | sed 's/= /=/g'
     echo "[cmp]"
-    kubectl get lcmmachine -n "$mosk_ns" -o wide --no-headers | grep cmp | awk '{print $1,"kaas_name=",$6,"ansible_host=",$5}' | sed 's/= /=/g'
+    kubectl  --context $KUBE_CONTEXT  get lcmmachine -n "$mosk_ns" -o wide --no-headers | grep cmp | awk '{print $1,"kaas_name=",$6,"ansible_host=",$5}' | sed 's/= /=/g'
 }
 
 function check_cmp_upgrade_readiness()
@@ -68,6 +72,7 @@ function check_cmp_upgrade_readiness()
     local cmp
     local non_running_vms
     cmp="$1"
+    non_running_vms="$( openstack server list --all -n -f value --limit 100000000000 --host "$cmp" |grep -v -w SHUTOFF )"
     if [[ -n "$non_running_vms" ]]; then
         echo "ERROR: $cmp still has running VMs."
         echo "$non_running_vms" | awk '{print $1,$2}'
@@ -92,7 +97,7 @@ function refresh_cmp_inventory()
 {
 
     #echo "INFO: Refreshing compute node inventory"
-    kubectl get nodes -l openstack-compute-node=enabled -o json | jq -j '.items[] | .metadata.name, " ", .metadata.labels."kaas.mirantis.com/machine-name", "\n"' | sort -k 2 > "$CMP_INVENTORY"
+    kubectl  --context $KUBE_CONTEXT  get nodes -l openstack-compute-node=enabled -o json | jq -j '.items[] | .metadata.name, " ", .metadata.labels."kaas.mirantis.com/machine-name", "\n"' | sort -k 2 > "$CMP_INVENTORY"
 }
 
 function create_nodeworkloadlock()
@@ -106,7 +111,7 @@ metadata:
   name: $TOOL_NAME-$cmp
 spec:
   nodeName: $cmp
-  controllerName: $TOOL_NAME" |  kubectl apply -f -
+  controllerName: $TOOL_NAME" |  kubectl  --context $KUBE_CONTEXT  apply -f -
 
 }
 
@@ -116,7 +121,7 @@ function remove_nodeworkloadlock()
     cmp="$1"
     if check_nodeworkloadlock "$cmp" > /dev/null; then
         echo "INFO: Releasing NodeWorkloadLock on the node $cmp"
-        kubectl delete nodeworkloadlocks --grace-period=0 "$TOOL_NAME-$cmp"
+        kubectl  --context $KUBE_CONTEXT delete nodeworkloadlocks --grace-period=0 "$TOOL_NAME-$cmp"
     else
         echo "ERROR: NodeWorkloadLock on the node $cmp does not exist"
         exit 2
@@ -129,7 +134,7 @@ function check_nodeworkloadlock()
     local cmp
     cmp="$1"
 
-    if kubectl get nodeworkloadlocks "$TOOL_NAME-$cmp" > /dev/null; then
+    if kubectl  --context $KUBE_CONTEXT  get nodeworkloadlocks "$TOOL_NAME-$cmp" > /dev/null; then
         echo -e "Check that the node $cmp has a nodeworkloadlock object \t $GREEN [OK] $RESTORE"
         return 0
     else
@@ -170,6 +175,8 @@ function usage()
         check-locks 
         
         list-vms 
+
+        ansible-inventory
         
         rack-list-vms <RACK> 
         
@@ -206,6 +213,11 @@ case "$1" in
         echo -e "$YELLOW CAUTION: DO NOT PROCEED WITH THE UPGRADE IF ONE OF THESE CHECKS FAILS $RESTORE"
         check_locks_all_nodes
         ;;
+    
+    ansible-inventory)
+        generate_ansible_inventory
+        ;;
+
     node-release-lock)
         check_env_correctness   
         if [ -z "$2" ]; then
@@ -238,7 +250,10 @@ case "$1" in
                     fi
                     # Enable back the nodes so we dont end up with all nodes left disabled
                     # LCM will disable/enable the node again when LCM picks the node for upgrade
-                    openstack compute service set --enable "$i" nova-compute
+                    skip_nova_disable=${4:-yes}
+                    if [[ "skip_nova_disable" != "yes" ]]; then
+                        openstack compute service set --enable "$i" nova-compute
+                    fi
                 done
             else
                 echo "ERROR: Rack $2 not found in the inventory"
