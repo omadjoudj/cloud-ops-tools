@@ -112,7 +112,7 @@ function check_locks_all_nodes()
 
 function usage()
 {
-    echo "Usage: $0 {lock-all-nodes | check-locks | list-vms | rack-list-vms <RACK> | rack-release-lock <RACK> | rack-disable <RACK> | rack-enable <RACK>| rack-live-migrate <RACK> | node-release-lock <NODE>}"
+    echo "Usage: `basename $0` {lock-all-nodes | check-locks | list-vms | rack-list-vms <RACK> | rack-release-lock <RACK> | rack-disable <RACK> | rack-enable <RACK>| rack-live-migrate <RACK> | node-release-lock <NODE>}"
 }
 
 # Main script starts here
