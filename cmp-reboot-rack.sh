@@ -16,7 +16,7 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
 else
 	kubectl  get bmh -n $cluster_ns -o wide  --context $KUBE_CONTEXT | grep cmp | grep $1 | awk '{print $1}' | xargs -P20 -I% kubectl  --context $KUBE_CONTEXT -n $cluster_ns  patch bmh % --type=merge -p "{\"spec\":{\"online\":false}}"
 
-	sleep 120
+	sleep 10
 
 	kubectl  get bmh -n $cluster_ns -o wide  --context $KUBE_CONTEXT | grep cmp | grep $1 | awk '{print $1}' | xargs -P20 -I% kubectl  --context $KUBE_CONTEXT -n $cluster_ns  patch bmh % --type=merge -p "{\"spec\":{\"online\":true}}"
 fi
