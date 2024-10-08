@@ -110,9 +110,25 @@ function check_locks_all_nodes()
 
 }
 
+function rack_silence_alert()
+{
+    local rack
+    rack="$1"
+
+    alert_submitter="{$USER:-opscare}"
+
+    for i in $( cat "$CMP_INVENTORY" | grep "$rack" | awk '{print $1}' );
+    do
+        kubectl -n stacklight exec sts/prometheus-alertmanager -c prometheus-alertmanager -- amtool --alertmanager.url http://127.0.0.1:9093 silence add -a "$alert_submitter"  -d 2h -c "MOSK Rack Upgrade"  "node=$i"
+
+    done
+
+}
+
 function usage()
 {
-    echo "Usage: `basename $0` {lock-all-nodes | check-locks | list-vms | rack-list-vms <RACK> | rack-release-lock <RACK> | rack-disable <RACK> | rack-enable <RACK>| rack-live-migrate <RACK> | node-release-lock <NODE>}"
+    echo "Usage: `basename $0` {lock-all-nodes | check-locks | list-vms | rack-list-vms <RACK> | rack-release-lock <RACK> | rack-disable <RACK> | rack-enable <RACK>| rack-live-migrate <RACK> | rack-silence <RACK> | node-release-lock <NODE>}"
+    echo "More info: https://mirantis.jira.com/wiki/spaces/PRD/pages/4905074889/MOSK+Upgrade+procedure+using+custom+OpsCare+tool"
 }
 
 # Main script starts here
@@ -152,6 +168,8 @@ case "$1" in
         else
             refresh_cmp_inventory
             if grep -q "$2" "$CMP_INVENTORY" ; then
+                echo "INFO: Creating silence rule for the nodes in the rack $2"
+                rack_silence_alert "$2"
                 echo "INFO: Starting to Release NodeWorkloadLock on the nodes of the rack $2:"
                 grep "$2" "$CMP_INVENTORY"
                 for i in $( grep "$2" "$CMP_INVENTORY" | awk '{print $1}' );
@@ -164,7 +182,7 @@ case "$1" in
                     fi
                     # Enable back the nodes so we dont end up with all nodes left disabled
                     # LCM will disable/enable the node again when LCM picks the node for upgrade
-                   openstack compute service set --enable "$i" nova-compute &
+                    openstack compute service set --enable "$i" nova-compute &
                 done
             else
                 echo "ERROR: Rack $2 not found in the inventory"
@@ -252,6 +270,22 @@ case "$1" in
             fi
         fi
         ;; 
+     rack-silence)
+        if [ -z "$2" ]; then
+            echo "ERROR: No Rack specified."
+            usage
+            exit 1
+        else
+            refresh_cmp_inventory
+            if grep -q "$2" "$CMP_INVENTORY" ; then
+                echo "INFO: Creating silence rule for the nodes in the rack $2"
+                rack_silence_alert "$2" 
+            else
+                echo "ERROR: Rack $2 not found in the inventory"
+                exit 1
+            fi
+        fi
+        ;;
     list-vms)
             refresh_cmp_inventory
             aggr_inventory=$(mktemp /tmp/aggr.XXXXXXXXXXXXX)
