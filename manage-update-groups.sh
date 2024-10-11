@@ -48,21 +48,27 @@ function cluster_gen_all_updateGroup_objs()
 
 }
 
+function get_machine_rack()
+{
+  local _machine
+  _machine=$1
+  kubectl get machine -n "$cluster_ns"  --no-headers -o name  "$_machine" | cut -d/ -f2 | grep -Eo 'z[0-9][0-9]r[0-9][0-9]b[0-9][0-9]'
+}
+
 function create_compute_updateGroup_per_rack() 
 {
+  # start from 5 b/c we have ctl, osd and default before
+  # We leave 1 group free in case we need to squeeze something there
   i=5
   for cmp_rack in $(kubectl get machine -n "$cluster_ns"  --no-headers -o name  | cut -d/ -f2 | grep "cmp" | grep -Eo 'z[0-9][0-9]r[0-9][0-9]b[0-9][0-9]' | sort -u); do
+    echo "---"
     gen_updategroup_obj "$cluster_name" "$cluster_ns" "cmp-rack-${cmp_rack}" "$i" 19
     i=$(($i+1))
   done
 }
 
 
-#for machine in $(kubectl get machine -n "$cluster_ns"  --no-headers -o name | grep "cmp" | grep "$cmp_rack")
-
-
 # Main script starts here
-
 
 if [ $# -eq 0 ]; then
    usage
@@ -78,7 +84,19 @@ case "$1" in
       create_compute_updateGroup_per_rack  
       ;;
     set-node-update-group|set-node-update-groups|set-nodes-update-group|set-nodes-update-groups)
-  #echo "kubectl label -n $cluster_ns $machine --overwrite kaas.mirantis.com/update-group=<UpdateGroupObjectName>"
+      #ctl
+      for machine in $(kubectl get machine -n "$cluster_ns"  --no-headers -o name | cut -d/ -f2 | grep -Ev "osd|cmp" ) ; do
+        echo "kubectl label machine -n $cluster_ns $machine --overwrite kaas.mirantis.com/update-group=${cluster_ns}-ctl"
+      done
+      #osd
+      for machine in $(kubectl get machine -n "$cluster_ns"  --no-headers -o name | cut -d/ -f2 | grep "osd" ) ; do
+        echo "kubectl label machine -n $cluster_ns $machine --overwrite kaas.mirantis.com/update-group=${cluster_ns}-osd"
+      done
+      #cmp
+      for machine in $(kubectl get machine -n "$cluster_ns"  --no-headers -o name | cut -d/ -f2 | grep "cmp" ) ; do
+        rack=$(get_machine_rack "$machine")
+        echo "kubectl label machine -n $cluster_ns $machine --overwrite kaas.mirantis.com/update-group=${cluster_ns}-cmp-rack-${rack}"
+      done
       ;;
     *)
       echo "Invalid subcommand"
