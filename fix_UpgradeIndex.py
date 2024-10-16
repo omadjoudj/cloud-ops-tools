@@ -7,6 +7,7 @@ import sys
 kubeconfig = str(sys.argv[1])
 cluster_name = str(sys.argv[2])
 BATCH_SIZE=5
+OFFSET=500
 
 ctl_nodes = subprocess.check_output("KUBECONFIG=%s  kubectl get -n %s machine -o custom-columns=NAME:.metadata.name | grep -vE 'NAME|osd|cmp'" % (kubeconfig, cluster_name), shell=True).decode().split("\n")
 ## cmp removed since they need to end indexed last as we will be switching to NodeWorkLoadLock-based approach
@@ -47,5 +48,11 @@ while True:
     
 
 for i in range(len(reindex_nodes)):
-    print("kubectl patch  machine %s -n %s  --type=\'json\' -p=\'[{\"op\": \"replace\",\"path\": \"/spec/providerSpec/value/upgradeIndex\",\"value\": %s}]\'" % (reindex_nodes[i], cluster_name, str(i+1)))
+    if 'cmp' in reindex_nodes[i]:
+        # Offset compute index so we have room for manual rescheduling 
+        new_upgrade_index=str(OFFSET+i+1)
+    else:
+        new_upgrade_index = str(i+1)
+    
+    print("kubectl patch  machine %s -n %s  --type=\'json\' -p=\'[{\"op\": \"replace\",\"path\": \"/spec/providerSpec/value/upgradeIndex\",\"value\": %s}]\'" % (reindex_nodes[i], cluster_name, new_upgrade_index ))
 

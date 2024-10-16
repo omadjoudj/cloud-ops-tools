@@ -1,5 +1,7 @@
 #!/bin/bash
+# A script to manage updategroups
 # Customization owner: omadjoudj
+
 
 set -euo pipefail
 
@@ -38,7 +40,7 @@ spec:
 
 function cluster_gen_all_updateGroup_objs()
 {
-    gen_updategroup_obj "$cluster_name" "$cluster_ns" "control-plane" 1 1
+    gen_updategroup_obj "$cluster_name" "$cluster_ns" "ctl" 1 1
     echo '---'
     gen_updategroup_obj "$cluster_name" "$cluster_ns" "osd" 2 2
     #echo '---'
@@ -55,7 +57,7 @@ function get_machine_rack()
   kubectl get machine -n "$cluster_ns"  --no-headers -o name  "$_machine" | cut -d/ -f2 | grep -Eo 'z[0-9][0-9]r[0-9][0-9]b[0-9][0-9]'
 }
 
-function create_compute_updateGroup_per_rack() 
+function create_compute_updateGroup_per_rack()
 {
   # start from 5 b/c we have ctl, osd and default before
   # We leave 1 group free in case we need to squeeze something there
@@ -81,7 +83,7 @@ cluster_name=$(kubectl get cluster -A --no-headers | grep -v 'default' | awk '{p
 case "$1" in
     create-update-group|create-update-groups)
       cluster_gen_all_updateGroup_objs
-      create_compute_updateGroup_per_rack  
+      create_compute_updateGroup_per_rack
       ;;
     set-node-update-group|set-node-update-groups|set-nodes-update-group|set-nodes-update-groups)
       #ctl

@@ -160,7 +160,7 @@ case "$1" in
             node_safe_release_lock "$2"
         fi
         ;;
-    rack-release-lock)
+    rack-release-lock|rack-release-locks)
         if [ -z "$2" ]; then
             echo "ERROR: No Rack specified."
             usage
@@ -221,7 +221,7 @@ case "$1" in
             if grep -q "$2" "$CMP_INVENTORY" ; then
                 for i in $( grep "$2" "$CMP_INVENTORY" | awk '{print $1}' );
                 do
-                    echo "INFO: Disabling the rack $2 / node $i from the scheduler"
+                   echo "INFO: Disabling the rack $2 / node $i from the scheduler"
                    openstack compute service set --disable --disable-reason="$TOOL_NAME: $USER: Preparing for upgrade" "$i" nova-compute &
                 done
             else
