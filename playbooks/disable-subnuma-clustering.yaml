@@ -1,0 +1,71 @@
+- name: Disable subnuma clustering
+  gather_facts: no
+  #hosts: cmp
+  hosts: cmp-z02r03b02-07
+  #become: true
+  #become_user: root
+  vars:
+    username: Administrator
+    password: <PASSWORD>
+  tasks:
+
+    - name: Install necessary packages
+      become: true
+      ansible.builtin.apt:
+        name:
+          - python3-pexpect
+          - ipmitool
+        state: present
+
+    - name: Obtain ILO IP
+      become: true
+      shell: "ipmitool lan print | grep 'IP Address' | tail -n 1 | cut -d: -f2 | awk '{print $NF}'"
+      register: ilo_ip
+      changed_when: false
+
+    - name: Set ILO IP fact
+      set_fact:
+        ilo_ip_address: "{{ ilo_ip.stdout.strip() }}"
+
+    - name: Debug ILO IP
+      debug:
+        msg: "ILO IP Address is {{ ilo_ip_address }}"
+
+    - name: Run patch to set WorkloadProfile to Custom on localhost
+      local_action:
+        module: uri
+        url: "https://{{ ilo_ip_address }}/redfish/v1/Systems/1/bios/settings/"
+        method: PATCH
+        headers:
+          Content-Type: "application/json"
+        body: '{"Attributes": {"WorkloadProfile": "Custom"}}'
+        user: "{{ username }}"
+        password: "{{ password }}"
+        force_basic_auth: yes
+        status_code: 200,202
+        validate_certs: no
+      register: patch_workload_profile
+
+    - name: Run patch to set SubNumaClustering to Disabled on localhost
+      local_action:
+        module: uri
+        url: "https://{{ ilo_ip_address }}/redfish/v1/Systems/1/bios/settings/"
+        method: PATCH
+        headers:
+          Content-Type: "application/json"
+        body: '{"Attributes": {"SubNumaClustering": "Disabled"}}'
+        user: "{{ username }}"
+        password: "{{ password }}"
+        force_basic_auth: yes
+        status_code: 200,202
+        validate_certs: no
+      register: patch_subnuma_clustering
+
+    - name: Debug workload profile patch response
+      debug:
+        var: patch_workload_profile
+
+    - name: Debug subnuma clustering patch response
+      debug:
+        var: patch_subnuma_clustering
+
