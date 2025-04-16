@@ -7,9 +7,10 @@ if [ $# -lt 1 ]; then
 fi
 
 export KUBE_CONTEXT="$1"
-cloud_region_name="$( echo $1| cut -d- -f2 | tr '_' '-' )"
+cloud_region_name="$( echo $1| cut -d- -f2 | tr '_' '-')"
 kubectl config use-context "$1"
 if [[ "$1" == *"mosk"* ]]; then 
     eval $(bkos-creds --region $cloud_region_name --project admin --env)
 fi
-cd $MOS_ACCESS/eu-${cloud_region_name}
+export CLOUD=$( echo $cloud_region_name | tr '-' '_')
+#cd $MOS_ACCESS/eu-${cloud_region_name}
