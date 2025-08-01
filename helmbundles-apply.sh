@@ -11,6 +11,18 @@ Options:
   --helmbundle <STRING>  Required: Specify the helm bundle
   --confirm              Optional: Confirmation flag
   -h, --help            Show this help message
+
+Example:
+
+cd <GERRIT ROOT DIRECTORY>
+
+helmbundles-apply.sh --helmbundle customisation-interstellar-cephmon.yaml
+
+## Review the changes, then apply
+
+helmbundles-apply.sh --helmbundle customisation-interstellar-cephmon.yaml --confirm
+
+
 EOF
 }
 
