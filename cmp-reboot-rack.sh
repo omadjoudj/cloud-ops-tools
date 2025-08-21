@@ -3,7 +3,7 @@
 # A: ~omadjoudj
 #
 
-set -euo pipefail
+#set -euo pipefail
 ctx=mcc-${CLOUD}
 
 cluster_ns="$(kubectl  --context $ctx get cluster -A --no-headers | grep -v 'default' | awk '{print $1}')"
