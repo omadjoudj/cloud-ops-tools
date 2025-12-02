@@ -65,6 +65,15 @@ if [ "$MODE" == "check" ]; then
          exit 1
     fi
 
+    EXISTING_UPD_STRATEGY=$(kubectl get ds "$DS_NAME" -n "$NAMESPACE" --ignore-not-found -o jsonpath='{.spec.updateStrategy.type}')
+    AUTO_OVS_RESTART=$(kubectl get -n osh-system cm rockoon-config -oyaml | grep  'automated_openvswitch_restart' | cut -d= -f2 | tr -d '[:space:]' )
+    if [ "$AUTO_OVS_RESTART" == "false" ]; then
+         echo -e "${GREEN}PASS ${NC} Rockoon's automated_openvswitch_restart is set to false"
+    else
+         echo -e "${RED}ERROR${NC} Rockoon's automated_openvswitch_restart is NOT set to false. Please adjust the config"
+         exit 1
+    fi
+
     echo "----  CHECKING CONFIGMAP STATUS "
     get_images
 
@@ -107,11 +116,11 @@ if [ "$MODE" == "check" ]; then
     echo "---------------------------------------------------------"
 
     if [ $MISMATCH -eq 1 ]; then
-        echo -e "Configmap is ${RED}OUT OF SYNC${NC}"
+        echo -e "Overall Status: ${RED}OUT OF SYNC${NC}"
         echo "Action: Run '$0 generate apply' to update."
         exit 1
     else
-        echo -e "Configmap is ${GREEN}IN SYNC${NC}"
+        echo -e "Overall Status: ${GREEN}IN SYNC${NC}"
         exit 0
     fi
 fi
