@@ -20,6 +20,6 @@ RUN pip3 install --no-cache-dir --break-system-packages \
     requests \
     requests-oauthlib
 
-WORKDIR /provisioning
+WORKDIR /git
 
 CMD ["/bin/bash"]
