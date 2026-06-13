@@ -6,7 +6,8 @@ RUN apt-get update && apt-get install -y \
     ipmitool \
     iputils-ping \
     traceroute \
-	curl \
+    bsdmainutils \
+    curl \
     dnsutils \
     python3 \
     python3-pip \
